@@ -14,24 +14,31 @@ app.get('/Excel', (req, res) => {
       console.log(error)
       console.log("config文件读入出错")
     }
+    // 按行切割文件内容
     let items = config.toString().trim().split('\r\n')
-    const results = []
+    const results = [] // ["1 2 3", "1,2,3", ....]
+    let maxLength = 0 // 记录最长的数组长度
+    // 按空格切割每行数据生成每列
     for (let i = 0, len = items.length; i < len; i++) {
       let temp = items[i].split(/\s+/)
+      if (temp.length > maxLength) maxLength = temp.length
       results.push(temp)
     }
     console.log(results)
     const conf = {};
     conf.name = "mysheet"
-    conf.cols = [
-      {caption: 'gene_id1', type: 'string', width: 20},
-      {caption: 'gene_id2', type: 'string', width: 40},
-      {caption: 'gene_id3', type: 'string', width: 40},
-      {caption: 'gene_id4', type: 'string', width: 40},
-      {caption: 'gene_id5', type: 'string', beforeCellWrite:function(row, cellData){
-        return cellData ? cellData : '';
-      }, width: 40
-    }]
+    conf.cols = []
+    for(let i = 0; i < maxLength; i++) {
+      let item = {
+        caption: `header${i + 1}`,
+        type: 'string',
+        beforeCellWrite:function(row, cellData){
+          return cellData ? cellData : '';
+        },
+        width: 40
+      }
+      config.cols.push(item)
+    }
     conf.rows = results
     const result = excelPort.execute(conf)
     res.setHeader('Content-Type', 'application/vnd.openxmlformats');
